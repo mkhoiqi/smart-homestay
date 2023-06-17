@@ -23,9 +23,6 @@ public class Audit {
     private LocalDateTime createdAt;
 
     @NotNull
-    private LocalDateTime updatedAt;
-
-    @NotNull
     @ManyToOne
     @JoinColumn(name = "created_by", referencedColumnName = "username")
     private User createdBy;
