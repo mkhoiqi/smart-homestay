@@ -17,7 +17,7 @@ public class RoomCategoryController {
 
     @Autowired
     RoomCategoryService roomCategoryService;
-    @PostMapping("/")
+    @PostMapping("")
     public WebResponse<RoomCategoryCreateResponse> create(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @RequestBody RoomCategoryCreateRequest request){
         RoomCategoryCreateResponse response = roomCategoryService.create(token, request);
 
@@ -41,7 +41,7 @@ public class RoomCategoryController {
                 .data(response).build();
     }
 
-    @GetMapping("/")
+    @GetMapping("")
     public WebResponse<List<RoomCategoryGetResponse>> getAll(@RequestHeader(value = "X-API-TOKEN", required = false) String token){
         List<RoomCategoryGetResponse> responses = roomCategoryService.getAll(token);
 

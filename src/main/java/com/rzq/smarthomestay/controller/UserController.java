@@ -16,7 +16,7 @@ public class UserController {
     @Autowired
     UserService userService;
 
-    @PostMapping("/")
+    @PostMapping("")
     public WebResponse<String> register(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @RequestBody UserRegisterRequest request){
         if(token==null){
             userService.register(request);
@@ -36,7 +36,7 @@ public class UserController {
                 .data(response).build();
     }
 
-    @DeleteMapping("/")
+    @DeleteMapping("")
     public WebResponse<String> logout(@RequestHeader(value = "X-API-TOKEN", required = false) String token){
         userService.logout(token);
         return WebResponse.<String>builder()

@@ -56,7 +56,6 @@ public class Transaction {
     private Room room;
 
     @NotNull
-    @Min(1)
     @Column(name = "number_of_rooms")
     private Integer numberOfRooms;
 
@@ -69,7 +68,6 @@ public class Transaction {
     private LocalDate checkoutDate;
 
     @NotNull
-    @Min(1)
     private Long amount;
 
     @ManyToMany

@@ -5,6 +5,7 @@ import lombok.*;
 import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -19,11 +20,10 @@ public class Room {
     private String id;
 
     @NotNull
-    @Column(length = 10, name = "room_number")
-    private String roomNumber;
+    @Column(name = "number_of_rooms")
+    private Integer numberOfRooms;
 
     @NotNull
-    @Min(1)
     private Long price;
 
     @Column(name = "deleted_at")

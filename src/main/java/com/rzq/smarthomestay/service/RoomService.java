@@ -10,7 +10,7 @@ public interface RoomService {
     public RoomCreateResponse create(String token, RoomCreateRequest request);
     public RoomCreateResponse update(String token, String id, RoomCreateRequest request);
     public RoomGetResponse getById(String token, String id);
-    public List<RoomGetResponse> getAll(String token);
+    public List<RoomGetResponse> getAll(String token, String roomCategory);
     public RoomGetResponse archive(String token, String id);
     public RoomGetResponse publish(String token, String id);
 }

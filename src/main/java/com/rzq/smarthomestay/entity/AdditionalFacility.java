@@ -23,7 +23,6 @@ public class AdditionalFacility {
     private String name;
 
     @NotNull
-    @Min(1)
     private Long price;
 
     @Column(name = "deleted_at")

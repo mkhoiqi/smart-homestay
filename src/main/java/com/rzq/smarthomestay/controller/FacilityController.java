@@ -16,7 +16,7 @@ public class FacilityController {
     @Autowired
     FacilityService facilityService;
 
-    @PostMapping("/")
+    @PostMapping("")
     public WebResponse<FacilityCreateResponse> create(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @RequestBody FacilityCreateRequest request){
         FacilityCreateResponse response = facilityService.create(token, request);
         return WebResponse.<FacilityCreateResponse>builder()
