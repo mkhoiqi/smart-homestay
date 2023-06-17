@@ -29,7 +29,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
     @Override
     public AdditionalFacilityCreateResponse create(String token, AdditionalFacilityCreateRequest request) {
         User user = validationService.validateToken(token);
-        validationService.validateIsEmployees(user);
+        if(!user.getIsEmployees()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
 
         validationService.validate(request);
         validationService.validateDuplicateAdditionalFacilityName(request.getName());
@@ -46,7 +48,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
     @Override
     public AdditionalFacilityCreateResponse update(String token, String id, AdditionalFacilityCreateRequest request) {
         User user = validationService.validateToken(token);
-        validationService.validateIsEmployees(user);
+        if(!user.getIsEmployees()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
 
         validationService.validate(request);
         validationService.validateDuplicateAdditionalFacilityName(request.getName());
@@ -65,7 +69,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
     @Override
     public AdditionalFacilityGetResponse getById(String token, String id) {
         User user = validationService.validateToken(token);
-        validationService.validateIsEmployees(user);
+        if(!user.getIsEmployees()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
 
         AdditionalFacility additionalFacility = additionalFacilityRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Additional Facility not found")
@@ -77,7 +83,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
     @Override
     public AdditionalFacilityGetResponse archive(String token, String id) {
         User user = validationService.validateToken(token);
-        validationService.validateIsEmployees(user);
+        if(!user.getIsEmployees()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
 
         AdditionalFacility additionalFacility = additionalFacilityRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Additional Facility not found")
@@ -95,7 +103,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
     @Override
     public AdditionalFacilityGetResponse publish(String token, String id) {
         User user = validationService.validateToken(token);
-        validationService.validateIsEmployees(user);
+        if(!user.getIsEmployees()){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
 
         AdditionalFacility additionalFacility = additionalFacilityRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Additional Facility not found")

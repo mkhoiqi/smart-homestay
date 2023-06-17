@@ -9,6 +9,8 @@ import com.rzq.smarthomestay.service.RoomCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/roomCategories")
 public class RoomCategoryController {
@@ -37,6 +39,14 @@ public class RoomCategoryController {
 
         return WebResponse.<RoomCategoryGetResponse>builder()
                 .data(response).build();
+    }
+
+    @GetMapping("/")
+    public WebResponse<List<RoomCategoryGetResponse>> getAll(@RequestHeader(value = "X-API-TOKEN", required = false) String token){
+        List<RoomCategoryGetResponse> responses = roomCategoryService.getAll(token);
+
+        return WebResponse.<List<RoomCategoryGetResponse>>builder()
+                .data(responses).build();
     }
 
     @DeleteMapping("/{id}")

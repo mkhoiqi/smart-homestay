@@ -54,12 +54,6 @@ public class ValidationServiceImpl implements ValidationService {
         return user;
     }
 
-    @Override
-    public void validateIsEmployees(User user) {
-        if(!user.getIsEmployees()){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
-    }
 
     @Override
     public void validateDuplicateUsername(String username) {
