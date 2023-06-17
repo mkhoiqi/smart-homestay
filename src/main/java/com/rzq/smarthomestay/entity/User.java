@@ -6,11 +6,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -39,4 +38,14 @@ public class User {
     @NotNull
     @Column(name = "is_employees")
     private Boolean isEmployees;
+
+    @OneToMany(mappedBy = "createdBy")
+    private Set<Transaction> transactions;
+
+    @OneToMany(mappedBy = "pendingUser")
+    private Set<Transaction> transactionsPending;
+
+    @OneToMany(mappedBy = "createdBy")
+    private Set<Audit> audits;
+
 }

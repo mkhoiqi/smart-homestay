@@ -1,11 +1,15 @@
 package com.rzq.smarthomestay.entity;
 
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -13,23 +17,19 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "additional_facilities")
-public class AdditionalFacility {
+@Table(name = "facilities")
+public class Facility {
     @Id
-    @NotNull
     private String id;
 
     @NotNull
     @Column(length = 50)
     private String name;
 
-    @NotNull
-    @Min(1)
-    private Long price;
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @ManyToMany(mappedBy = "additionalFacilities")
-    private Set<Transaction> transactions;
+    @ManyToMany(mappedBy = "facilities")
+    //pakai set karena unique
+    private Set<Room> rooms;
 }
