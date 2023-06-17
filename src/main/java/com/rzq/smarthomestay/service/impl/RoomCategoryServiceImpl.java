@@ -57,7 +57,7 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
         }
 
         validationService.validate(request);
-        validationService.validateDuplicateRoomCategoryName(request.getName());
+        validationService.validateDuplicateRoomCategoryName(request.getName(), id);
 
         RoomCategory roomCategory = roomCategoryRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found")
@@ -90,38 +90,12 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
             Specification<RoomCategory> specification = (root, query, builder) -> {
                 List<Predicate> predicates = new ArrayList<>();
                 predicates.add(builder.isNull(root.get("deletedAt")));
-//                if(Objects.nonNull(request.getName())){
-//                    predicates.add(builder.or(
-//                            builder.like(root.get("firstName"), "%"+request.getName()+"%"),
-//                            builder.like(root.get("lastName"), "%"+request.getName()+"%")
-//                    ));
-//                }
-//                if(Objects.nonNull(request.getEmail())){
-//                    predicates.add(builder.like(root.get("email"), "%"+request.getEmail()+"%"));
-//                }
-//                if(Objects.nonNull(request.getPhone())){
-//                    predicates.add(builder.like(root.get("phone"), "%"+request.getPhone()+"%"));
-//                }
-
                 return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
             };
             roomCategories = roomCategoryRepository.findAll(specification);
         } else{
             Specification<RoomCategory> specification = (root, query, builder) -> {
                 List<Predicate> predicates = new ArrayList<>();
-//                predicates.add(builder.equal(root.get("user"), user));
-//                if(Objects.nonNull(request.getName())){
-//                    predicates.add(builder.or(
-//                            builder.like(root.get("firstName"), "%"+request.getName()+"%"),
-//                            builder.like(root.get("lastName"), "%"+request.getName()+"%")
-//                    ));
-//                }
-//                if(Objects.nonNull(request.getEmail())){
-//                    predicates.add(builder.like(root.get("email"), "%"+request.getEmail()+"%"));
-//                }
-//                if(Objects.nonNull(request.getPhone())){
-//                    predicates.add(builder.like(root.get("phone"), "%"+request.getPhone()+"%"));
-//                }
 
                 return query.where(predicates.toArray(new Predicate[]{})).getRestriction();
             };
@@ -144,13 +118,9 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
 
-        RoomCategory roomCategory = roomCategoryRepository.findById(id).orElseThrow(
+        RoomCategory roomCategory = roomCategoryRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found")
         );
-
-        if(roomCategory.getDeletedAt()!=null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found");
-        }
 
         roomCategory.setDeletedAt(LocalDateTime.now());
         roomCategoryRepository.save(roomCategory);
@@ -165,13 +135,9 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
 
-        RoomCategory roomCategory = roomCategoryRepository.findById(id).orElseThrow(
+        RoomCategory roomCategory = roomCategoryRepository.findByIdAndDeletedAtIsNotNull(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found")
         );
-
-        if(roomCategory.getDeletedAt()==null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found");
-        }
 
         roomCategory.setDeletedAt(null);
         roomCategoryRepository.save(roomCategory);

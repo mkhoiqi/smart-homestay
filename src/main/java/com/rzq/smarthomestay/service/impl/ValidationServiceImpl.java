@@ -3,6 +3,7 @@ package com.rzq.smarthomestay.service.impl;
 import com.rzq.smarthomestay.entity.User;
 import com.rzq.smarthomestay.exception.CustomException;
 import com.rzq.smarthomestay.repository.AdditionalFacilityRepository;
+import com.rzq.smarthomestay.repository.FacilityRepository;
 import com.rzq.smarthomestay.repository.RoomCategoryRepository;
 import com.rzq.smarthomestay.repository.UserRepository;
 import com.rzq.smarthomestay.service.ValidationService;
@@ -29,6 +30,9 @@ public class ValidationServiceImpl implements ValidationService {
 
     @Autowired
     private AdditionalFacilityRepository additionalFacilityRepository;
+
+    @Autowired
+    private FacilityRepository facilityRepository;
 
     @Override
     public void validate(Object request) {
@@ -70,8 +74,36 @@ public class ValidationServiceImpl implements ValidationService {
     }
 
     @Override
+    public void validateDuplicateRoomCategoryName(String name, String id) {
+        if(roomCategoryRepository.existsByNameAndIdNot(name, id)){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "name", "already created");
+        }
+    }
+
+    @Override
     public void validateDuplicateAdditionalFacilityName(String name) {
         if(additionalFacilityRepository.existsByName(name)){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "name", "already created");
+        }
+    }
+
+    @Override
+    public void validateDuplicateAdditionalFacilityName(String name, String id) {
+        if(additionalFacilityRepository.existsByNameAndIdNot(name ,id)){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "name", "already created");
+        }
+    }
+
+    @Override
+    public void validateDuplicateFacilityName(String name) {
+        if(facilityRepository.existsByName(name)){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "name", "already created");
+        }
+    }
+
+    @Override
+    public void validateDuplicateFacilityName(String name, String id) {
+        if(facilityRepository.existsByNameAndIdNot(name, id)){
             throw new CustomException(HttpStatus.BAD_REQUEST, "name", "already created");
         }
     }

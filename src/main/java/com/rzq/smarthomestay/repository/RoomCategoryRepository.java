@@ -13,5 +13,10 @@ import java.util.Optional;
 public interface RoomCategoryRepository extends JpaRepository<RoomCategory, String>, JpaSpecificationExecutor<RoomCategory> {
     public boolean existsByName(String name);
 
+    public boolean existsByNameAndIdNot(String name, String id);
+
+    public Optional<RoomCategory> findByIdAndDeletedAtIsNull(String id);
+
+    public Optional<RoomCategory> findByIdAndDeletedAtIsNotNull(String id);
 
 }

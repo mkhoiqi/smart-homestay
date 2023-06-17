@@ -53,7 +53,7 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
         }
 
         validationService.validate(request);
-        validationService.validateDuplicateAdditionalFacilityName(request.getName());
+        validationService.validateDuplicateAdditionalFacilityName(request.getName(), id);
 
         AdditionalFacility additionalFacility = additionalFacilityRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Additional Facility not found")
