@@ -48,6 +48,6 @@ public class TransactionGetDetailsResponse {
 
     @JsonProperty("additional_facilities")
     private Set<AdditionalFacilityCreateResponse> additionalFacilities;
-    private List<AuditResponse> audits;
+    private Set<AuditResponse> audits;
 
 }
