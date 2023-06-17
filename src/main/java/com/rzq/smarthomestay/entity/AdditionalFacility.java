@@ -16,7 +16,6 @@ import java.util.Set;
 @Table(name = "additional_facilities")
 public class AdditionalFacility {
     @Id
-    @NotNull
     private String id;
 
     @NotNull

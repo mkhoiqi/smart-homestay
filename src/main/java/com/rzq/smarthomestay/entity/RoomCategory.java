@@ -19,7 +19,6 @@ import java.util.List;
 @Table(name = "room_categories")
 public class RoomCategory {
     @Id
-    @NotNull
     private String id;
 
     @NotNull

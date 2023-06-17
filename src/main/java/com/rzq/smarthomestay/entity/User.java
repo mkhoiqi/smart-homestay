@@ -19,7 +19,6 @@ import java.util.Set;
 @Table(name = "users")
 public class User {
     @Id
-    @NotNull
     @Column(length = 20)
     private String username;
 
