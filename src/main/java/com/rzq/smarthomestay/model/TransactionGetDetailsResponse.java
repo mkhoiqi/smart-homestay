@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +42,12 @@ public class TransactionGetDetailsResponse {
     @JsonProperty("number_of_rooms")
     private Integer numberOfRooms;
     private String status;
+
+    @Column(name = "virtual_account")
+    private String virtualAccount;
+
+    @Column(name = "virtual_account_expired_at")
+    private LocalDateTime virtualAccountExpiredAt;
 
     @JsonProperty("created_by")
     private UserDetailsResponse createdBy;

@@ -17,13 +17,10 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class TransactionOrderRequest {
-    @FutureOrPresent
     @NotNull
     @JsonProperty("checkin_date")
     private LocalDate checkinDate;
 
-
-    @FutureOrPresent
     @NotNull
     @JsonProperty("checkout_date")
     private LocalDate checkoutDate;

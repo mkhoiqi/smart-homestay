@@ -41,9 +41,6 @@ public class User {
     @OneToMany(mappedBy = "createdBy")
     private Set<Transaction> transactions;
 
-    @OneToMany(mappedBy = "pendingUser")
-    private Set<Transaction> transactionsPending;
-
     @OneToMany(mappedBy = "createdBy")
     private Set<Audit> audits;
 

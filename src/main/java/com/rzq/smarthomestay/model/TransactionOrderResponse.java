@@ -35,9 +35,6 @@ public class TransactionOrderResponse {
     @JsonProperty("last_activity")
     private String lastActivity;
 
-    @JsonProperty("pending_user")
-    private UserDetailsResponse pendingUser;
-
     @JsonProperty("number_of_rooms")
     private Integer numberOfRooms;
     private String status;

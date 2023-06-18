@@ -37,6 +37,12 @@ public class Transaction {
     @Column(name = "update_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "virtual_account")
+    private String virtualAccount;
+
+    @Column(name = "virtual_account_expired_at")
+    private LocalDateTime virtualAccountExpiredAt;
+
     @NotNull
     private String status;
 
@@ -46,9 +52,9 @@ public class Transaction {
     @NotNull
     private String lastActivity;
 
-    @ManyToOne
-    @JoinColumn(name = "pending_user", referencedColumnName = "username")
-    private User pendingUser;
+//    @ManyToOne
+//    @JoinColumn(name = "pending_user", referencedColumnName = "username")
+//    private User pendingUser;
 
     @NotNull
     @ManyToOne

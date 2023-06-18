@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.criteria.Predicate;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -31,9 +32,6 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Autowired
     RoomRepository roomRepository;
-
-    @Autowired
-    UserRepository userRepository;
 
     @Autowired
     ValidationService validationService;
@@ -126,9 +124,22 @@ public class TransactionServiceImpl implements TransactionService {
             additionalFacilities.add(additionalFacility);
         }
 
-        if(request.getCheckinDate().isAfter(request.getCheckoutDate())){
-            throw new CustomException(HttpStatus.BAD_REQUEST, "checkin_date", "checkin date can't occur after checkout date");
+        if(request.getCheckinDate().isBefore(LocalDate.now())){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "checkin_date", "checkin date can't occur before today");
         }
+
+        if(request.getCheckoutDate().isBefore(LocalDate.now())){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "checkout_date", "checkout date can't occur before today");
+        }
+
+        if(!request.getCheckoutDate().isAfter(request.getCheckinDate())){
+            throw new CustomException(HttpStatus.BAD_REQUEST, "checkout_date", "checkout date must occur after checkin date");
+        }
+
+        if(!availabilityCheck(room, request)){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The room is not available for the given date range");
+        }
+
 
         Long dateRange = ChronoUnit.DAYS.between(request.getCheckinDate(), request.getCheckoutDate());
         String status = "Waiting Approval";
@@ -138,10 +149,6 @@ public class TransactionServiceImpl implements TransactionService {
         Long amount = (request.getNumberOfRooms()*room.getPrice()*dateRange)+sumPriceAdditionalFacilities;
         LocalDateTime now = LocalDateTime.now();
 
-        User pendingUser = new User();
-        pendingUser.setUsername("admin");
-        pendingUser.setName("Admin");
-
         Transaction transaction = new Transaction();
         transaction.setId(UUID.randomUUID().toString());
         transaction.setCreatedBy(user);
@@ -150,7 +157,6 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setStatus(status);
         transaction.setLastAction(lastAction);
         transaction.setLastActivity(lastActivity);
-        transaction.setPendingUser(pendingUser);
         transaction.setRoom(room);
         transaction.setNumberOfRooms(request.getNumberOfRooms());
         transaction.setCheckinDate(request.getCheckinDate());
@@ -180,75 +186,144 @@ public class TransactionServiceImpl implements TransactionService {
         excludedStatus.add("Rejected");
         excludedStatus.add("Cancelled");
         excludedStatus.add("Checked Out");
+        excludedStatus.add("Expired");
 
-        Transaction transaction = transactionRepository.findByIdAndPendingUserAndStatusNotIn(id, user, excludedStatus).orElseThrow(
+        Transaction transaction = transactionRepository.findByIdAndStatusNotIn(id, excludedStatus).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found")
         );
 
         String status = null;
         String lastActivity = null;
-        User pendingUser = transaction.getPendingUser();
 
-        if(transaction.getStatus().equalsIgnoreCase("Waiting Approval")){
+        /**
+         * Kemungkinan Alur:
+         * VOrder (U) (Submitted) ->  Approval (E) (Rejected)
+         * VOrder (U) (Submitted) ->  Approval (E) (Approved) -> Payment (E) (Intervened) (Intervened bisa dilakukan bila VA expired)
+         * VOrder (U) (Submitted) ->  Approval (E) (Approved) -> Payment (U) (Cancelled)
+         * VOrder (U) (Submitted) ->  Approval (E) (Approved) -> Payment (U) (Paid) -> Checkin (E) (Intervened) (Intervened bisa dilakukan bila sudah melewati tanggal Checkout)
+         * VOrder (U) (Submitted) ->  Approval (E) (Approved) -> Payment (U) (Paid) -> Checkin (U) (Checkedin) -> Checkout (E) (Intervened) (Intervened bisa dilakukan bila sudah melewati tanggal Checkout)
+         * Order (U) (Submitted) ->  Approval (E) (Approved) -> Payment (U) (Paid) -> Checkin (U) (Checkedin) -> Checkout (U) (Checkedout)
+         */
+
+        if(transaction.getStatus().equalsIgnoreCase("Waiting Approval")){ //Approval
             //Kemungkinan action: Rejected, Approved (Employees)
+            if(!user.getIsEmployees()){
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            }
+
             lastActivity = "Approval Employees";
+
             if(!action.equalsIgnoreCase("Rejected") && !action.equalsIgnoreCase("Approved")){
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
             } else{
                 if(action.equalsIgnoreCase("Rejected")){
                     status = "Rejected";
-//                    pendingUser = null;
                 } else{
                     status = "Waiting Payment";
-                    pendingUser = transaction.getCreatedBy();
                 }
             }
-        } else if(transaction.getStatus().equalsIgnoreCase("Waiting Payment")){
-            //Kemungkinan action: Cancelled, Paid (User)
-            lastActivity = "Payment";
-            if(!action.equalsIgnoreCase("Cancelled") && !action.equalsIgnoreCase("Paid")){
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
-            } else {
-                if(action.equalsIgnoreCase("Cancelled")){
-                    status = "Cancelled";
-//                    pendingUser = null;
+        } else if(transaction.getStatus().equalsIgnoreCase("Waiting Payment")){ //Payment
+            //Kemungkinan action: Cancelled, Paid (User), Intervened (Employees)
+
+            if(user.getIsEmployees()){ //Employees
+                if(transaction.getVirtualAccountExpiredAt().isBefore(LocalDateTime.now())){ //udah lewat
+
+                    if(!action.equalsIgnoreCase("Intervened")){
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                    }
+                    lastActivity = "Intervention";
+
+                    status = "Expired";
                 } else{
-                    status = "Payment Success";
-                    pendingUser = transaction.getCreatedBy();
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+
+                }
+            } else if(!user.equals(transaction.getCreatedBy())){ //User tapi bukan yang order
+
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+
+            } else{ //User yang order
+                if(transaction.getVirtualAccountExpiredAt().isBefore(LocalDateTime.now())){ //udah lewat
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The payment virtual account has expired");
+                }
+                lastActivity = "Payment";
+                if(!action.equalsIgnoreCase("Cancelled") && !action.equalsIgnoreCase("Paid")){
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                } else {
+                    if(action.equalsIgnoreCase("Cancelled")){
+                        status = "Cancelled";
+                    } else{
+                        status = "Payment Success";
+                    }
                 }
             }
-        } else if(transaction.getStatus().equalsIgnoreCase("Payment Success")){
-            //Kemungkinan action: Checkedin (User)
-            lastActivity = "Check In";
-            if(!action.equalsIgnoreCase("Checkedin")){
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+        } else if(transaction.getStatus().equalsIgnoreCase("Payment Success")){ //Checkin
+            //Kemungkinan action: Checkedin (User), Intervened (Employees)
+            if(user.getIsEmployees()){
+                if(!transaction.getCheckoutDate().isBefore(LocalDate.now())){
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+                } else{
+                    lastActivity = "Intervention";
+                    if(!action.equalsIgnoreCase("Intervened")){
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                    } else{
+                        status = "Expired";
+                    }
+                }
+            } else if(!user.equals(transaction.getCreatedBy())){
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
             } else{
-                status = "Checked In";
-                pendingUser = transaction.getCreatedBy();
+                lastActivity = "Check In";
+                if(!action.equalsIgnoreCase("Checkedin")){
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                } else{
+                    if(LocalDate.now().isBefore(transaction.getCheckinDate())){
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"It's not time to check in yet.");
+                    }
+                    status = "Checked In";
+                }
+
             }
-        } else if (transaction.getStatus().equalsIgnoreCase("Checked In")) {
-            //Kemungkinan action: Checkout (User)
-            lastActivity = "Check Out";
-            if(!action.equalsIgnoreCase("Checkedout")){
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+        } else if (transaction.getStatus().equalsIgnoreCase("Checked In")) { //Checkout
+            //Kemungkinan action: Checkedout (User), Intervented (Employees)
+            if(user.getIsEmployees()){
+                if(!transaction.getCheckoutDate().isBefore(LocalDate.now())){
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+                } else{
+                    lastActivity = "Intervention";
+                    if(!action.equalsIgnoreCase("Intervened")){
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                    } else{
+                        status = "Expired";
+                    }
+                }
+            } else if(!user.equals(transaction.getCreatedBy())){
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
             } else{
-                status = "Checked Out";
-//                pendingUser = null;
+                lastActivity = "Check Out";
+                if(!action.equalsIgnoreCase("Checkedout")){
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Action");
+                } else{
+                    status = "Checked Out";
+                }
             }
         }
 
-        System.out.println("Here");
         LocalDateTime now = LocalDateTime.now();
 
-        System.out.println("Here2");
+        if(transaction.getStatus().equalsIgnoreCase("Waiting Approval") && action.equalsIgnoreCase("Approved")){
+            transaction.setVirtualAccount(UUID.randomUUID().toString());
+//            transaction.setVirtualAccountExpiredAt(LocalDateTime.now().plusHours(1));
+            transaction.setVirtualAccountExpiredAt(LocalDateTime.now().plusMinutes(3));
+        }
+
         transaction.setUpdatedAt(now);
         transaction.setStatus(status);
         transaction.setLastAction(action);
         transaction.setLastActivity(lastActivity);
-        transaction.setPendingUser(pendingUser);
         transactionRepository.save(transaction);
 
-        System.out.println("Here 3");
+
         Audit audit = new Audit();
         audit.setId(UUID.randomUUID().toString());
         audit.setTransaction(transaction);
@@ -257,9 +332,7 @@ public class TransactionServiceImpl implements TransactionService {
         audit.setCreatedBy(user);
         audit.setCreatedAt(now);
 
-        System.out.println("Here 4");
         auditRepository.save(audit);
-        System.out.println("Here 5");
         return toTransactionOrderResponse(transaction);
     }
 
@@ -272,9 +345,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private TransactionOrderResponse toTransactionOrderResponse(Transaction transaction){
-        UserDetailsResponse pendingUser = new UserDetailsResponse();
-        pendingUser.setName(transaction.getPendingUser().getName());
-        pendingUser.setUsername(transaction.getPendingUser().getUsername());
 
 
         UserDetailsResponse createdBy = new UserDetailsResponse();
@@ -310,7 +380,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .createdAt(transaction.getCreatedAt())
                 .lastAction(transaction.getLastAction())
                 .lastActivity(transaction.getLastActivity())
-                .pendingUser(pendingUser)
                 .numberOfRooms(transaction.getNumberOfRooms())
                 .status(transaction.getStatus())
                 .createdBy(createdBy)
@@ -410,9 +479,37 @@ public class TransactionServiceImpl implements TransactionService {
                 .lastActivity(transaction.getLastActivity())
                 .numberOfRooms(transaction.getNumberOfRooms())
                 .status(transaction.getStatus())
+                .virtualAccount(transaction.getVirtualAccount())
+                .virtualAccountExpiredAt(transaction.getVirtualAccountExpiredAt())
                 .createdBy(createdBy)
                 .room(room)
                 .additionalFacilities(additionalFacilityCreateResponses)
                 .audits(auditResponses).build();
+    }
+
+    private boolean availabilityCheck(Room room, TransactionOrderRequest request){
+        Integer numberOfRooms = room.getNumberOfRooms();
+
+        List<String> excludedStatus = new ArrayList<>();
+        excludedStatus.add("Rejected");
+        excludedStatus.add("Cancelled");
+        excludedStatus.add("Checked Out");
+        excludedStatus.add("Expired");
+
+        LocalDateTime dateTime = LocalDateTime.now();
+
+        LocalDate currDate = request.getCheckinDate();
+        while (currDate.isBefore(request.getCheckoutDate())){
+            Integer bookedRoom = transactionRepository.countBookedRoom(excludedStatus, room, currDate, dateTime);
+            System.out.println("Booked "+currDate+": "+bookedRoom);
+            Integer availableRoom = numberOfRooms-bookedRoom;
+
+            if(availableRoom<request.getNumberOfRooms()){
+                return false;
+            }
+            currDate = currDate.plusDays(1);
+        }
+
+        return true;
     }
 }
