@@ -1,10 +1,7 @@
 package com.rzq.smarthomestay.controller;
 
 
-import com.rzq.smarthomestay.model.RoomCategoryCreateRequest;
-import com.rzq.smarthomestay.model.RoomCategoryCreateResponse;
-import com.rzq.smarthomestay.model.RoomCategoryGetResponse;
-import com.rzq.smarthomestay.model.WebResponse;
+import com.rzq.smarthomestay.model.*;
 import com.rzq.smarthomestay.service.RoomCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -34,10 +31,11 @@ public class RoomCategoryController {
     }
 
     @GetMapping("/{id}")
-    public WebResponse<RoomCategoryGetResponse> getById(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @PathVariable("id") String id){
-        RoomCategoryGetResponse response = roomCategoryService.getById(token, id);
+    public WebResponse<RoomCategoryGetDetailsResponse> getById(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @PathVariable("id") String id){
+        RoomCategoryGetDetailsResponse response = roomCategoryService.getById(token, id);
+        System.out.println("di controller");
 
-        return WebResponse.<RoomCategoryGetResponse>builder()
+        return WebResponse.<RoomCategoryGetDetailsResponse>builder()
                 .data(response).build();
     }
 

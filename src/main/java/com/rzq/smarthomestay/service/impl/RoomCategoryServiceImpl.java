@@ -3,9 +3,7 @@ package com.rzq.smarthomestay.service.impl;
 import com.rzq.smarthomestay.entity.RoomCategory;
 import com.rzq.smarthomestay.entity.RoomCategoryAudit;
 import com.rzq.smarthomestay.entity.User;
-import com.rzq.smarthomestay.model.RoomCategoryCreateRequest;
-import com.rzq.smarthomestay.model.RoomCategoryCreateResponse;
-import com.rzq.smarthomestay.model.RoomCategoryGetResponse;
+import com.rzq.smarthomestay.model.*;
 import com.rzq.smarthomestay.repository.RoomCategoryAuditRepository;
 import com.rzq.smarthomestay.repository.RoomCategoryRepository;
 import com.rzq.smarthomestay.service.RoomCategoryService;
@@ -18,10 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -92,16 +87,19 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
     }
 
     @Override
-    public RoomCategoryGetResponse getById(String token, String id) {
+    public RoomCategoryGetDetailsResponse getById(String token, String id) {
         User user = validationService.validateToken(token);
         if(!user.getIsEmployees()){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
+        System.out.println("ada di sini");
 
         RoomCategory roomCategory = roomCategoryRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found")
         );
-        return toRoomCategoryGetResponse(roomCategory);
+        System.out.println("roomCategory.getId(): "+roomCategory.getId());
+        System.out.println("roomCategory.getAudits(): "+roomCategory.getAudits());
+        return toRoomCategoryGetDetailsResponse(roomCategory);
     }
 
     @Override
@@ -178,5 +176,22 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
                 .id(roomCategory.getId())
                 .name(roomCategory.getName())
                 .deletedAt(roomCategory.getDeletedAt()).build();
+    }
+
+    private RoomCategoryGetDetailsResponse toRoomCategoryGetDetailsResponse(RoomCategory roomCategory){
+
+        Set<RoomCategoryAuditResponse> roomCategoryAuditResponses = new HashSet<>();
+        for(RoomCategoryAudit roomCategoryAudit: roomCategory.getAudits()){
+            RoomCategoryAuditResponse roomCategoryAuditResponse = new RoomCategoryAuditResponse();
+            roomCategoryAuditResponse.setName(roomCategoryAudit.getName());
+            roomCategoryAuditResponse.setCreatedAt(roomCategoryAudit.getCreatedAt());
+            roomCategoryAuditResponses.add(roomCategoryAuditResponse);
+        }
+
+        return RoomCategoryGetDetailsResponse.builder()
+                .id(roomCategory.getId())
+                .name(roomCategory.getName())
+                .deletedAt(roomCategory.getDeletedAt())
+                .audits(roomCategoryAuditResponses).build();
     }
 }
