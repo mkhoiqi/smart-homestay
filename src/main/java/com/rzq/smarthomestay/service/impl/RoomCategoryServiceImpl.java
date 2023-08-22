@@ -1,10 +1,12 @@
 package com.rzq.smarthomestay.service.impl;
 
 import com.rzq.smarthomestay.entity.RoomCategory;
+import com.rzq.smarthomestay.entity.RoomCategoryAudit;
 import com.rzq.smarthomestay.entity.User;
 import com.rzq.smarthomestay.model.RoomCategoryCreateRequest;
 import com.rzq.smarthomestay.model.RoomCategoryCreateResponse;
 import com.rzq.smarthomestay.model.RoomCategoryGetResponse;
+import com.rzq.smarthomestay.repository.RoomCategoryAuditRepository;
 import com.rzq.smarthomestay.repository.RoomCategoryRepository;
 import com.rzq.smarthomestay.service.RoomCategoryService;
 import com.rzq.smarthomestay.service.ValidationService;
@@ -31,6 +33,9 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
     @Autowired
     RoomCategoryRepository roomCategoryRepository;
 
+    @Autowired
+    RoomCategoryAuditRepository roomCategoryAuditRepository;
+
     @Override
     public RoomCategoryCreateResponse create(String token, RoomCategoryCreateRequest request) {
         User user = validationService.validateToken(token);
@@ -46,6 +51,14 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
         roomCategory.setName(request.getName());
 
         roomCategoryRepository.save(roomCategory);
+
+        RoomCategoryAudit roomCategoryAudit = new RoomCategoryAudit();
+        roomCategoryAudit.setId(UUID.randomUUID().toString());
+        roomCategoryAudit.setName(roomCategory.getName());
+        roomCategoryAudit.setCreatedAt(LocalDateTime.now());
+        roomCategoryAudit.setRoomCategory(roomCategory);
+        roomCategoryAuditRepository.save(roomCategoryAudit);
+
         return toRoomCategoryCreateResponse(roomCategory);
     }
 
@@ -63,8 +76,17 @@ public class RoomCategoryServiceImpl implements RoomCategoryService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room Category not found")
         );
 
+        String oldName = roomCategory.getName();
         roomCategory.setName(request.getName());
         roomCategoryRepository.save(roomCategory);
+
+        RoomCategoryAudit roomCategoryAudit = new RoomCategoryAudit();
+        roomCategoryAudit.setId(UUID.randomUUID().toString());
+        roomCategoryAudit.setName(request.getName());
+        roomCategoryAudit.setCreatedAt(LocalDateTime.now());
+        roomCategoryAudit.setRoomCategory(roomCategory);
+        roomCategoryAuditRepository.save(roomCategoryAudit);
+
 
         return toRoomCategoryCreateResponse(roomCategory);
     }

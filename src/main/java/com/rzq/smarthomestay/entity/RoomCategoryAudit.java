@@ -6,19 +6,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "room_categories")
-public class RoomCategory {
+@Table(name = "room_categories_audit")
+public class RoomCategoryAudit {
     @Id
     private String id;
 
@@ -26,12 +24,11 @@ public class RoomCategory {
     @Column(length = 50)
     private String name;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "roomCategory")
-    private List<Room> rooms;
-
-    @OneToMany(mappedBy = "roomCategory")
-    private Set<RoomCategoryAudit> audits;
+    @NotNull
+    @ManyToOne
+    @JoinColumn(name = "room_category_id", referencedColumnName = "id")
+    private RoomCategory roomCategory;
 }
