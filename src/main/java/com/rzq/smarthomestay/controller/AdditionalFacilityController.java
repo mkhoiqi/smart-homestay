@@ -28,9 +28,9 @@ public class AdditionalFacilityController {
     }
 
     @GetMapping("/{id}")
-    public WebResponse<AdditionalFacilityGetResponse> getById(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @PathVariable("id") String id){
-        AdditionalFacilityGetResponse response = additionalFacilityService.getById(token, id);
-        return WebResponse.<AdditionalFacilityGetResponse>builder()
+    public WebResponse<AdditionalFacilityGetDetailsResponse> getById(@RequestHeader(value = "X-API-TOKEN", required = false) String token, @PathVariable("id") String id){
+        AdditionalFacilityGetDetailsResponse response = additionalFacilityService.getById(token, id);
+        return WebResponse.<AdditionalFacilityGetDetailsResponse>builder()
                 .data(response).build();
     }
 

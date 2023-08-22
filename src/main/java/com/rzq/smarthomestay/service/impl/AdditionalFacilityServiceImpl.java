@@ -1,12 +1,8 @@
 package com.rzq.smarthomestay.service.impl;
 
-import com.rzq.smarthomestay.entity.AdditionalFacility;
-import com.rzq.smarthomestay.entity.Facility;
-import com.rzq.smarthomestay.entity.RoomCategory;
-import com.rzq.smarthomestay.entity.User;
-import com.rzq.smarthomestay.model.AdditionalFacilityCreateRequest;
-import com.rzq.smarthomestay.model.AdditionalFacilityCreateResponse;
-import com.rzq.smarthomestay.model.AdditionalFacilityGetResponse;
+import com.rzq.smarthomestay.entity.*;
+import com.rzq.smarthomestay.model.*;
+import com.rzq.smarthomestay.repository.AdditionalFacilityAuditRepository;
 import com.rzq.smarthomestay.repository.AdditionalFacilityRepository;
 import com.rzq.smarthomestay.service.AdditionalFacilityService;
 import com.rzq.smarthomestay.service.ValidationService;
@@ -18,9 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +25,9 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
 
     @Autowired
     AdditionalFacilityRepository additionalFacilityRepository;
+
+    @Autowired
+    AdditionalFacilityAuditRepository additionalFacilityAuditRepository;
 
     @Override
     public AdditionalFacilityCreateResponse create(String token, AdditionalFacilityCreateRequest request) {
@@ -48,6 +45,15 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
         additionalFacility.setPrice(request.getPrice());
 
         additionalFacilityRepository.save(additionalFacility);
+
+        AdditionalFacilityAudit additionalFacilityAudit = new AdditionalFacilityAudit();
+        additionalFacilityAudit.setId(UUID.randomUUID().toString());
+        additionalFacilityAudit.setName(request.getName());
+        additionalFacilityAudit.setPrice(request.getPrice());
+        additionalFacilityAudit.setCreatedAt(LocalDateTime.now());
+        additionalFacilityAudit.setAdditionalFacility(additionalFacility);
+        additionalFacilityAuditRepository.save(additionalFacilityAudit);
+
         return toAdditionalFacilityCreateResponse(additionalFacility);
     }
 
@@ -69,11 +75,20 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
         additionalFacility.setPrice(request.getPrice());
 
         additionalFacilityRepository.save(additionalFacility);
+
+        AdditionalFacilityAudit additionalFacilityAudit = new AdditionalFacilityAudit();
+        additionalFacilityAudit.setId(UUID.randomUUID().toString());
+        additionalFacilityAudit.setName(request.getName());
+        additionalFacilityAudit.setPrice(request.getPrice());
+        additionalFacilityAudit.setCreatedAt(LocalDateTime.now());
+        additionalFacilityAudit.setAdditionalFacility(additionalFacility);
+        additionalFacilityAuditRepository.save(additionalFacilityAudit);
+
         return toAdditionalFacilityCreateResponse(additionalFacility);
     }
 
     @Override
-    public AdditionalFacilityGetResponse getById(String token, String id) {
+    public AdditionalFacilityGetDetailsResponse getById(String token, String id) {
         User user = validationService.validateToken(token);
         if(!user.getIsEmployees()){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
@@ -83,7 +98,7 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Additional Facility not found")
         );
 
-        return toAdditionalFacilityGetResponse(additionalFacility);
+        return toAdditionalFacilityGetDetailsResponse(additionalFacility);
     }
 
     @Override
@@ -169,5 +184,23 @@ public class AdditionalFacilityServiceImpl implements AdditionalFacilityService 
                 .name(additionalFacility.getName())
                 .price(additionalFacility.getPrice())
                 .deletedAt(additionalFacility.getDeletedAt()).build();
+    }
+    private AdditionalFacilityGetDetailsResponse toAdditionalFacilityGetDetailsResponse(AdditionalFacility additionalFacility){
+        Set<AdditionalFacilityAuditResponse> additionalFacilityAuditResponses = new HashSet<>();
+
+        for(AdditionalFacilityAudit additionalFacilityAudit: additionalFacility.getAudits()){
+            AdditionalFacilityAuditResponse additionalFacilityAuditResponse = new AdditionalFacilityAuditResponse();
+            additionalFacilityAuditResponse.setName(additionalFacilityAudit.getName());
+            additionalFacilityAuditResponse.setPrice(additionalFacilityAudit.getPrice());
+            additionalFacilityAuditResponse.setCreatedAt(additionalFacilityAudit.getCreatedAt());
+            additionalFacilityAuditResponses.add(additionalFacilityAuditResponse);
+        }
+
+        return AdditionalFacilityGetDetailsResponse.builder()
+                .id(additionalFacility.getId())
+                .name(additionalFacility.getName())
+                .price(additionalFacility.getPrice())
+                .deletedAt(additionalFacility.getDeletedAt())
+                .audits(additionalFacilityAuditResponses).build();
     }
 }

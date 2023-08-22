@@ -30,4 +30,7 @@ public class AdditionalFacility {
 
     @ManyToMany(mappedBy = "additionalFacilities")
     private Set<Transaction> transactions;
+
+    @OneToMany(mappedBy = "additionalFacility")
+    private Set<AdditionalFacilityAudit> audits;
 }
