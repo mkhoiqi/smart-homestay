@@ -1,11 +1,11 @@
 package com.rzq.smarthomestay.service.impl;
 
 import com.rzq.smarthomestay.entity.Facility;
+import com.rzq.smarthomestay.entity.FacilityAudit;
 import com.rzq.smarthomestay.entity.RoomCategory;
 import com.rzq.smarthomestay.entity.User;
-import com.rzq.smarthomestay.model.FacilityCreateRequest;
-import com.rzq.smarthomestay.model.FacilityCreateResponse;
-import com.rzq.smarthomestay.model.FacilityGetResponse;
+import com.rzq.smarthomestay.model.*;
+import com.rzq.smarthomestay.repository.FacilityAuditRepository;
 import com.rzq.smarthomestay.repository.FacilityRepository;
 import com.rzq.smarthomestay.service.FacilityService;
 import com.rzq.smarthomestay.service.ValidationService;
@@ -17,9 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.criteria.Predicate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +28,9 @@ public class FacilityServiceImpl implements FacilityService {
 
     @Autowired
     FacilityRepository facilityRepository;
+
+    @Autowired
+    FacilityAuditRepository facilityAuditRepository;
 
     @Override
     public FacilityCreateResponse create(String token, FacilityCreateRequest request) {
@@ -46,6 +47,15 @@ public class FacilityServiceImpl implements FacilityService {
         facility.setName(request.getName());
 
         facilityRepository.save(facility);
+
+
+        FacilityAudit facilityAudit = new FacilityAudit();
+        facilityAudit.setId(UUID.randomUUID().toString());
+        facilityAudit.setName(request.getName());
+        facilityAudit.setCreatedAt(LocalDateTime.now());
+        facilityAudit.setFacility(facility);
+        facilityAuditRepository.save(facilityAudit);
+
         return toFacilityCreateResponse(facility);
     }
 
@@ -65,11 +75,19 @@ public class FacilityServiceImpl implements FacilityService {
 
         facility.setName(request.getName());
         facilityRepository.save(facility);
+
+        FacilityAudit facilityAudit = new FacilityAudit();
+        facilityAudit.setId(UUID.randomUUID().toString());
+        facilityAudit.setName(request.getName());
+        facilityAudit.setCreatedAt(LocalDateTime.now());
+        facilityAudit.setFacility(facility);
+        facilityAuditRepository.save(facilityAudit);
+
         return toFacilityCreateResponse(facility);
     }
 
     @Override
-    public FacilityGetResponse getById(String token, String id) {
+    public FacilityGetDetailsResponse getById(String token, String id) {
         User user = validationService.validateToken(token);
         if(!user.getIsEmployees()){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
@@ -78,7 +96,7 @@ public class FacilityServiceImpl implements FacilityService {
         Facility facility = facilityRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facility not found")
         );
-        return toFacilityGetResponse(facility);
+        return toFacilityGetDetailsResponse(facility);
     }
 
     @Override
@@ -154,5 +172,22 @@ public class FacilityServiceImpl implements FacilityService {
                 .id(facility.getId())
                 .name(facility.getName())
                 .deletedAt(facility.getDeletedAt()).build();
+    }
+
+    private FacilityGetDetailsResponse toFacilityGetDetailsResponse(Facility facility){
+        Set<FacilityAuditResponse> facilityAuditResponses = new HashSet<>();
+
+        for(FacilityAudit facilityAudit: facility.getAudits()){
+            FacilityAuditResponse facilityAuditResponse = new FacilityAuditResponse();
+            facilityAuditResponse.setName(facilityAudit.getName());
+            facilityAuditResponse.setCreatedAt(facilityAudit.getCreatedAt());
+            facilityAuditResponses.add(facilityAuditResponse);
+        }
+
+        return FacilityGetDetailsResponse.builder()
+                .id(facility.getId())
+                .name(facility.getName())
+                .deletedAt(facility.getDeletedAt())
+                .audits(facilityAuditResponses).build();
     }
 }
