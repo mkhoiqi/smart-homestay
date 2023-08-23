@@ -47,15 +47,7 @@ public class TransactionServiceImpl implements TransactionService {
                     () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found")
             );
 
-
-            Set<AdditionalFacility> realAdditionalFacilities = new HashSet<>();
-            for (AdditionalFacility additionalFacility: transaction.getAdditionalFacilities()){
-                List<AdditionalFacilityAudit> additionalFacilityAudits = additionalFacilityAuditRepository.getAdditionalFacilityAuditBeforeTransaction(additionalFacility, transaction.getCreatedAt());
-                additionalFacility.setName(additionalFacilityAudits.get(0).getName());
-                additionalFacility.setPrice(additionalFacilityAudits.get(0).getPrice());
-                realAdditionalFacilities.add(additionalFacility);
-            }
-            transaction.setAdditionalFacilities(realAdditionalFacilities);
+            transaction.setAdditionalFacilities(getRealAdditionalFacilities(transaction.getAdditionalFacilities(), transaction.getCreatedAt()));
 
             return toTransactionGetDetailsResponse(transaction);
         } else{
@@ -63,14 +55,7 @@ public class TransactionServiceImpl implements TransactionService {
                     () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found")
             );
 
-            Set<AdditionalFacility> realAdditionalFacilities = new HashSet<>();
-            for (AdditionalFacility additionalFacility: transaction.getAdditionalFacilities()){
-                List<AdditionalFacilityAudit> additionalFacilityAudits = additionalFacilityAuditRepository.getAdditionalFacilityAuditBeforeTransaction(additionalFacility, transaction.getCreatedAt());
-                additionalFacility.setName(additionalFacilityAudits.get(0).getName());
-                additionalFacility.setPrice(additionalFacilityAudits.get(0).getPrice());
-                realAdditionalFacilities.add(additionalFacility);
-            }
-            transaction.setAdditionalFacilities(realAdditionalFacilities);
+            transaction.setAdditionalFacilities(getRealAdditionalFacilities(transaction.getAdditionalFacilities(), transaction.getCreatedAt()));
 
             return toTransactionGetDetailsResponse(transaction);
         }
@@ -535,5 +520,16 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         return true;
+    }
+
+    public Set<AdditionalFacility> getRealAdditionalFacilities(Set<AdditionalFacility> currentAdditionalFacilities, LocalDateTime transactionDateTime){
+        Set<AdditionalFacility> realAdditionalFacilities = new HashSet<>();
+        for (AdditionalFacility additionalFacility: currentAdditionalFacilities){
+            List<AdditionalFacilityAudit> additionalFacilityAudits = additionalFacilityAuditRepository.getAdditionalFacilityAuditBeforeTransaction(additionalFacility, transactionDateTime);
+            additionalFacility.setName(additionalFacilityAudits.get(0).getName());
+            additionalFacility.setPrice(additionalFacilityAudits.get(0).getPrice());
+            realAdditionalFacilities.add(additionalFacility);
+        }
+        return realAdditionalFacilities;
     }
 }
