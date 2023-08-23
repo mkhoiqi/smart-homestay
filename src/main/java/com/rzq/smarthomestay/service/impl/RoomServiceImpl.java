@@ -1,12 +1,10 @@
 package com.rzq.smarthomestay.service.impl;
 
-import com.rzq.smarthomestay.entity.Facility;
-import com.rzq.smarthomestay.entity.Room;
-import com.rzq.smarthomestay.entity.RoomCategory;
-import com.rzq.smarthomestay.entity.User;
+import com.rzq.smarthomestay.entity.*;
 import com.rzq.smarthomestay.exception.CustomException;
 import com.rzq.smarthomestay.model.*;
 import com.rzq.smarthomestay.repository.FacilityRepository;
+import com.rzq.smarthomestay.repository.RoomAuditRepository;
 import com.rzq.smarthomestay.repository.RoomCategoryRepository;
 import com.rzq.smarthomestay.repository.RoomRepository;
 import com.rzq.smarthomestay.service.RoomService;
@@ -37,6 +35,9 @@ public class RoomServiceImpl implements RoomService {
     @Autowired
     FacilityRepository facilityRepository;
 
+    @Autowired
+    RoomAuditRepository roomAuditRepository;
+
     @Override
     public RoomCreateResponse create(String token, RoomCreateRequest request) {
         User user = validationService.validateToken(token);
@@ -66,6 +67,16 @@ public class RoomServiceImpl implements RoomService {
         room.setFacilities(facilities);
 
         roomRepository.save(room);
+
+        RoomAudit roomAudit = new RoomAudit();
+        roomAudit.setId(UUID.randomUUID().toString());
+        roomAudit.setCreatedAt(LocalDateTime.now());
+        roomAudit.setNumberOfRooms(request.getNumberOfRooms());
+        roomAudit.setPrice(request.getPrice());
+        roomAudit.setRoomCategory(roomCategory);
+        roomAudit.setRoom(room);
+        roomAudit.setFacilities(facilities);
+        roomAuditRepository.save(roomAudit);
 
         return toRoomCreateResponse(room);
     }
@@ -101,6 +112,16 @@ public class RoomServiceImpl implements RoomService {
         room.setFacilities(facilities);
 
         roomRepository.save(room);
+
+        RoomAudit roomAudit = new RoomAudit();
+        roomAudit.setId(UUID.randomUUID().toString());
+        roomAudit.setCreatedAt(LocalDateTime.now());
+        roomAudit.setNumberOfRooms(request.getNumberOfRooms());
+        roomAudit.setPrice(request.getPrice());
+        roomAudit.setRoomCategory(roomCategory);
+        roomAudit.setRoom(room);
+        roomAudit.setFacilities(facilities);
+        roomAuditRepository.save(roomAudit);
 
         return toRoomCreateResponse(room);
     }

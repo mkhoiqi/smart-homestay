@@ -35,4 +35,9 @@ public class Facility {
 
     @OneToMany(mappedBy = "facility")
     private Set<FacilityAudit> audits;
+
+
+    @ManyToMany(mappedBy = "facilities")
+    //pakai set karena unique
+    private Set<RoomAudit> roomsAudit;
 }
