@@ -37,6 +37,15 @@ public class TransactionServiceImpl implements TransactionService {
     RoomRepository roomRepository;
 
     @Autowired
+    RoomAuditRepository roomAuditRepository;
+
+    @Autowired
+    RoomCategoryAuditRepository roomCategoryAuditRepository;
+
+    @Autowired
+    FacilityAuditRepository facilityAuditRepository;
+
+    @Autowired
     ValidationService validationService;
 
     @Override
@@ -48,6 +57,8 @@ public class TransactionServiceImpl implements TransactionService {
             );
 
             transaction.setAdditionalFacilities(getRealAdditionalFacilities(transaction.getAdditionalFacilities(), transaction.getCreatedAt()));
+//            Room room = getRealRoom(transaction.getRoom(), transaction.getCreatedAt());
+            transaction.setRoom(getRealRoom(transaction.getRoom(), transaction.getCreatedAt()));
 
             return toTransactionGetDetailsResponse(transaction);
         } else{
@@ -56,6 +67,7 @@ public class TransactionServiceImpl implements TransactionService {
             );
 
             transaction.setAdditionalFacilities(getRealAdditionalFacilities(transaction.getAdditionalFacilities(), transaction.getCreatedAt()));
+            transaction.setRoom(getRealRoom(transaction.getRoom(), transaction.getCreatedAt()));
 
             return toTransactionGetDetailsResponse(transaction);
         }
@@ -526,10 +538,49 @@ public class TransactionServiceImpl implements TransactionService {
         Set<AdditionalFacility> realAdditionalFacilities = new HashSet<>();
         for (AdditionalFacility additionalFacility: currentAdditionalFacilities){
             List<AdditionalFacilityAudit> additionalFacilityAudits = additionalFacilityAuditRepository.getAdditionalFacilityAuditBeforeTransaction(additionalFacility, transactionDateTime);
-            additionalFacility.setName(additionalFacilityAudits.get(0).getName());
-            additionalFacility.setPrice(additionalFacilityAudits.get(0).getPrice());
+            if(!additionalFacilityAudits.isEmpty()){
+                additionalFacility.setName(additionalFacilityAudits.get(0).getName());
+                additionalFacility.setPrice(additionalFacilityAudits.get(0).getPrice());
+            }
             realAdditionalFacilities.add(additionalFacility);
         }
         return realAdditionalFacilities;
+    }
+
+    public Room getRealRoom(Room currentRoom, LocalDateTime transactionCreatedAt){
+
+        List<RoomAudit> roomAudits = roomAuditRepository.getRoomAuditBeforeTransaction(currentRoom, transactionCreatedAt);
+        if(!roomAudits.isEmpty()){
+            currentRoom.setPrice(roomAudits.get(0).getPrice());
+            currentRoom.setNumberOfRooms(roomAudits.get(0).getNumberOfRooms());
+            currentRoom.setRoomCategory(getRealRoomCategory(roomAudits.get(0).getRoomCategory(), transactionCreatedAt));
+            currentRoom.setFacilities(getRealFacilities(roomAudits.get(0).getFacilities(), transactionCreatedAt));
+        }
+
+        return currentRoom;
+    }
+
+    public RoomCategory getRealRoomCategory(RoomCategory currentRoomCategory, LocalDateTime transactionCreatedAt){
+
+        List<RoomCategoryAudit> roomCategoryAudits = roomCategoryAuditRepository.getRoomCategoryAuditBeforeTransaction(currentRoomCategory, transactionCreatedAt);
+        if(!roomCategoryAudits.isEmpty()){
+            currentRoomCategory.setName(roomCategoryAudits.get(0).getName());
+        }
+
+        return currentRoomCategory;
+    }
+
+    public Set<Facility> getRealFacilities(Set<Facility> currentFacilities, LocalDateTime transactionCreatedAt){
+
+        Set<Facility> realFacilities = new HashSet<>();
+        for(Facility currentFacility: currentFacilities){
+            List<FacilityAudit> facilityAudits = facilityAuditRepository.getFacilityAuditBeforeTransaction(currentFacility, transactionCreatedAt);
+            if(!facilityAudits.isEmpty()){
+                currentFacility.setName(facilityAudits.get(0).getName());
+            }
+            realFacilities.add(currentFacility);
+        }
+
+        return realFacilities;
     }
 }
