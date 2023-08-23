@@ -127,7 +127,7 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomGetResponse getById(String token, String id) {
+    public RoomGetDetailsResponse getById(String token, String id) {
         User user = validationService.validateToken(token);
 
         if(!user.getIsEmployees()){
@@ -135,14 +135,14 @@ public class RoomServiceImpl implements RoomService {
                     () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
             );
 
-            return toRoomGetResponse(room);
+            return toRoomGetDetailsResponse(room);
         }
 
         Room room = roomRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         );
 
-        return toRoomGetResponse(room);
+        return toRoomGetDetailsResponse(room);
     }
 
     @Override
@@ -273,5 +273,53 @@ public class RoomServiceImpl implements RoomService {
                 .price(room.getPrice())
                 .facilities(facilities)
                 .deletedAt(room.getDeletedAt()).build();
+    }
+
+    private RoomGetDetailsResponse toRoomGetDetailsResponse(Room room){
+        RoomCategoryCreateResponse roomCategory = new RoomCategoryCreateResponse();
+        roomCategory.setId(room.getRoomCategory().getId());
+        roomCategory.setName(room.getRoomCategory().getName());
+
+        Set<FacilityCreateResponse> facilities = new HashSet<>();
+        for(Facility facility: room.getFacilities()){
+            FacilityCreateResponse facilityCreateResponse = new FacilityCreateResponse();
+            facilityCreateResponse.setId(facility.getId());
+            facilityCreateResponse.setName(facility.getName());
+            facilities.add(facilityCreateResponse);
+        }
+
+        Set<RoomAuditResponse> roomAuditResponses = new HashSet<>();
+        for(RoomAudit roomAudit: room.getAudits()){
+            RoomCategoryCreateResponse roomCategoryAudit = new RoomCategoryCreateResponse();
+            roomCategoryAudit.setId(roomAudit.getRoomCategory().getId());
+            roomCategoryAudit.setName(roomAudit.getRoomCategory().getName());
+
+            Set<FacilityCreateResponse> facilitiesAudit = new HashSet<>();
+            for(Facility facilityAudit: roomAudit.getFacilities()){
+                FacilityCreateResponse facilityCreateResponse = new FacilityCreateResponse();
+                facilityCreateResponse.setId(facilityAudit.getId());
+                facilityCreateResponse.setName(facilityAudit.getName());
+                facilitiesAudit.add(facilityCreateResponse);
+            }
+
+            RoomAuditResponse roomAuditResponse = new RoomAuditResponse();
+            roomAuditResponse.setCreatedAt(roomAudit.getCreatedAt());
+            roomAuditResponse.setRoomCategory(roomCategoryAudit);
+            roomAuditResponse.setPrice(roomAudit.getPrice());
+            roomAuditResponse.setNumberOfRooms(roomAudit.getNumberOfRooms());
+            roomAuditResponse.setFacilities(facilitiesAudit);
+
+            roomAuditResponses.add(roomAuditResponse);
+        }
+
+
+        return RoomGetDetailsResponse.builder()
+                .id(room.getId())
+                .roomCategory(roomCategory)
+                .numberOfRooms(room.getNumberOfRooms())
+                .price(room.getPrice())
+                .facilities(facilities)
+                .deletedAt(room.getDeletedAt())
+                .audits(roomAuditResponses).build();
     }
 }
