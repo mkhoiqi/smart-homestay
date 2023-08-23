@@ -93,6 +93,10 @@ public class TransactionServiceImpl implements TransactionService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found");
         }
 
+        for (Transaction response: responses){
+            response.setRoom(getRealRoom(response.getRoom(), response.getCreatedAt()));
+        }
+
         return responses.stream()
                 .map(response -> toTransactionGetResponse(response))
                 .collect(Collectors.toList());
@@ -116,6 +120,10 @@ public class TransactionServiceImpl implements TransactionService {
 
         if(responses.isEmpty()){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found");
+        }
+
+        for (Transaction response: responses){
+            response.setRoom(getRealRoom(response.getRoom(), response.getCreatedAt()));
         }
 
         return responses.stream()
